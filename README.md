@@ -502,6 +502,7 @@ Date: 02/22/2026
 import unittest
 from unittest.mock import patch, MagicMock
 import pandas as pd
+import sys
 
 
 class TestProjectTwoDashboard(unittest.TestCase):
@@ -509,8 +510,12 @@ class TestProjectTwoDashboard(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Mock CRUD and import the app module once for all tests."""
-        # Sample record with 15 columns matching the Austin Animal Center dataset
+        """Mock environment and CRUD before importing the app."""
+
+        # Ensure clean import each time
+        sys.modules.pop("ProjectTwoDashboardApp", None)
+
+        # Sample record (16 fields including _id)
         cls.sample_record = {
             "_id": "abc123",
             "age_upon_outcome": "2 years",
@@ -533,42 +538,45 @@ class TestProjectTwoDashboard(unittest.TestCase):
         cls.mock_crud_instance = MagicMock()
         cls.mock_crud_instance.read.return_value = [cls.sample_record.copy()]
 
-        # Patch CRUD and os.getenv before importing the app module
-        cls.patcher_crud = patch("ProjectTwoDashboardApp.CRUD", return_value=cls.mock_crud_instance)
-        cls.patcher_env = patch("ProjectTwoDashboardApp.os.getenv", return_value="dummy_pass")
-        cls.patcher_logo = patch("ProjectTwoDashboardApp.os.path.exists", return_value=False)
+        # Inject required environment variable
+        cls.patcher_env = patch.dict("os.environ", {"AAC_PASS": "dummy_pass"})
 
-        cls.patcher_crud.start()
+        # Patch CRUD class
+        cls.patcher_crud = patch(
+            "CRUD_Python_Module.CRUD",
+            return_value=cls.mock_crud_instance
+        )
+
+        # Prevent logo file lookup
+        cls.patcher_logo = patch("os.path.exists", return_value=False)
+
         cls.patcher_env.start()
+        cls.patcher_crud.start()
         cls.patcher_logo.start()
 
+        # Import after patching
         import ProjectTwoDashboardApp as app_module
         cls.app_module = app_module
 
     @classmethod
     def tearDownClass(cls):
-        cls.patcher_crud.stop()
         cls.patcher_env.stop()
+        cls.patcher_crud.stop()
         cls.patcher_logo.stop()
 
-    # DataFrame setup tests 
-
+    # DataFrame setup tests
     def test_dataframe_loads(self):
-        """Verify the app creates a valid DataFrame."""
         self.assertIsInstance(self.app_module.df, pd.DataFrame)
 
     def test_id_column_removed(self):
-        """Verify the _id column is removed from the DataFrame."""
         self.assertNotIn("_id", self.app_module.df.columns)
 
     def test_dataframe_column_count(self):
-        """Verify expected column count after _id removal."""
+        # 16 original - 1 (_id) = 15
         self.assertEqual(len(self.app_module.df.columns), 15)
 
     # Query builder tests
-
     def test_build_query_water_rescue(self):
-        """Verify Water Rescue query filters for correct breeds, sex, and age."""
         query = self.app_module.build_rescue_query('water')
         self.assertEqual(query["animal_type"], "Dog")
         self.assertIn("Labrador Retriever Mix", query["breed"]["$in"])
@@ -579,7 +587,6 @@ class TestProjectTwoDashboard(unittest.TestCase):
         self.assertEqual(query["age_upon_outcome_in_weeks"]["$lte"], 156)
 
     def test_build_query_mountain_rescue(self):
-        """Verify Mountain/Wilderness Rescue query filters correctly."""
         query = self.app_module.build_rescue_query('mountain')
         self.assertEqual(query["animal_type"], "Dog")
         self.assertIn("German Shepherd", query["breed"]["$in"])
@@ -590,7 +597,6 @@ class TestProjectTwoDashboard(unittest.TestCase):
         self.assertEqual(query["sex_upon_outcome"], "Intact Male")
 
     def test_build_query_disaster_rescue(self):
-        """Verify Disaster/Individual Tracking query filters correctly."""
         query = self.app_module.build_rescue_query('disaster')
         self.assertEqual(query["animal_type"], "Dog")
         self.assertIn("Doberman Pinscher", query["breed"]["$in"])
@@ -601,74 +607,70 @@ class TestProjectTwoDashboard(unittest.TestCase):
         self.assertEqual(query["age_upon_outcome_in_weeks"]["$lte"], 300)
 
     def test_build_query_reset(self):
-        """Verify Reset returns an empty query (all records)."""
         query = self.app_module.build_rescue_query('reset')
         self.assertEqual(query, {})
 
-    # Callback Tests
-
+    # Callback tests
     def test_update_dashboard_calls_crud_read(self):
-        """Verify the filter callback queries the database via CRUD."""
         self.mock_crud_instance.read.reset_mock()
-        self.mock_crud_instance.read.return_value = [self.sample_record.copy()]
-
         result = self.app_module.update_dashboard('water')
         self.mock_crud_instance.read.assert_called_once()
         self.assertIsInstance(result, list)
 
     def test_update_dashboard_reset(self):
-        """Verify reset filter returns data."""
-        self.mock_crud_instance.read.return_value = [self.sample_record.copy()]
         result = self.app_module.update_dashboard('reset')
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
 
     def test_update_graphs_with_data(self):
-        """Verify the pie chart callback returns a Graph component."""
         from dash import dcc
+
         view_data = [
             {"breed": "Labrador Retriever Mix", "name": "Buddy"},
             {"breed": "Labrador Retriever Mix", "name": "Max"},
             {"breed": "Newfoundland", "name": "Bear"},
         ]
-        result = self.app_module.update_graphs(view_data)
+
+        # Patch plotly pie at runtime
+        with patch.object(self.app_module.px, "pie", return_value=MagicMock()):
+            result = self.app_module.update_graphs(view_data)
+
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], dcc.Graph)
 
     def test_update_graphs_empty_data(self):
-        """Verify the pie chart callback handles empty data gracefully."""
         from dash import html
         result = self.app_module.update_graphs([])
         self.assertIsInstance(result, html.Div)
 
     def test_update_graphs_none_data(self):
-        """Verify the pie chart callback handles None data."""
         from dash import html
         result = self.app_module.update_graphs(None)
         self.assertIsInstance(result, html.Div)
 
     def test_update_map_with_data(self):
-        """Verify the map callback returns a Graph for valid data."""
         from dash import dcc
+
         record = self.sample_record.copy()
         record.pop("_id", None)
-        result = self.app_module.update_map([record], [0])
+
+        # Patch plotly scatter_map at runtime
+        with patch.object(self.app_module.px, "scatter_map", return_value=MagicMock()):
+            result = self.app_module.update_map([record], [0])
+
         self.assertIsInstance(result, dcc.Graph)
 
     def test_update_map_empty_data(self):
-        """Verify the map callback handles empty data gracefully."""
         from dash import html
         result = self.app_module.update_map([], None)
         self.assertIsInstance(result, html.Div)
 
     def test_update_styles_with_selection(self):
-        """Verify column highlighting returns style conditionals."""
         result = self.app_module.update_styles(["breed"])
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['if']['column_id'], "breed")
 
     def test_update_styles_no_selection(self):
-        """Verify no highlighting when nothing is selected."""
         result = self.app_module.update_styles([])
         self.assertEqual(result, [])
 
