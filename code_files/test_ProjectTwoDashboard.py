@@ -40,8 +40,8 @@ class TestProjectTwoDashboard(unittest.TestCase):
         cls.mock_crud_instance = MagicMock()
         cls.mock_crud_instance.read.return_value = [cls.sample_record.copy()]
 
-        # Patch global os.getenv before module import
-        cls.patcher_env = patch("os.getenv", return_value="dummy_pass")
+        # Chaged to injecting AAC_PASS
+        cls.patcher_env = patch.dict("os.environ", {"AAC_PASS": "dummy_pass"})
 
         # Patch CRUD where it is defined
         cls.patcher_crud = patch(
