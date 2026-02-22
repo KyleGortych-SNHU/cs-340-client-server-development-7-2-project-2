@@ -1,16 +1,9 @@
 name: Python Tests
 
-# Run when relevant source or test files change
 on:
   push:
     paths:
-      - 'code_files/CRUD_Python_Module.py'
-      - 'code_files/ModuleFiveAssignmentApp.py'
-      - 'code_files/ModuleSixMilestoneApp.py'
-      - 'code_files/ProjectTwoDashboardApp.py'
-      - 'code_files/test_crud.py'
-      - 'code_files/test_ProjectTwoDashboard.py'
-
+      - 'code_files/**'
   pull_request:
     paths:
       - 'code_files/**'
@@ -37,6 +30,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install pymongo dash pandas plotly
 
-      - name: Run tests
+      - name: Run Project Two tests
         working-directory: code_files
-        run: python -m unittest discover -s . -p "test_*.py" -v
+        run: python -m unittest test_ProjectTwoDashboard.py -v

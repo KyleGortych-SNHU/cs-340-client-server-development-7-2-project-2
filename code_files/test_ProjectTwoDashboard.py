@@ -41,7 +41,7 @@ class TestProjectTwoDashboard(unittest.TestCase):
 
         # Patch CRUD and os.getenv before importing the app module
         cls.patcher_crud = patch("ProjectTwoDashboardApp.CRUD", return_value=cls.mock_crud_instance)
-        cls.patcher_env = patch("ProjectTwoDashboardApp.os.getenv", return_value="dummy_pass")
+        cls.patcher_env = patch("os.getenv", return_value="dummy_pass")
         cls.patcher_logo = patch("ProjectTwoDashboardApp.os.path.exists", return_value=False)
 
         cls.patcher_crud.start()
