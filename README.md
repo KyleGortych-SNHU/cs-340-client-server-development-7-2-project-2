@@ -718,6 +718,9 @@ MongoDB was chosen as the model component because it is a document-oriented NoSQ
 ### Why Dash?
 The Dash framework by Plotly was used to provide both the view and controller layers of the MVC architecture. Dash allows building interactive web applications entirely in Python, which keeps the entire stack in one language. Its callback system acts as the controller, linking user interactions (like selecting a radio button) to data updates and widget re-renders. Dash components such as `DataTable`, `dcc.Graph`, and `dcc.RadioItems` provided the interactive widgets needed for the data table, pie chart, and geolocation map without requiring any front-end JavaScript.
 
+### Challenges
+The main issues ran into unit testing via mocking. It was important to ensure that each part of the application didn't run remotely but, rather used mocking to replicate the behavior. 
+
 ## Resources
 - [Dash Documentation](https://dash.plotly.com/)
 - [Plotly Express](https://plotly.com/python/plotly-express/)
