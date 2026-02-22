@@ -8,6 +8,7 @@ Date: 02/22/2026
 import unittest
 from unittest.mock import patch, MagicMock
 import pandas as pd
+import sys
 
 
 class TestProjectTwoDashboard(unittest.TestCase):
@@ -17,7 +18,10 @@ class TestProjectTwoDashboard(unittest.TestCase):
     def setUpClass(cls):
         """Mock environment and CRUD before importing the app."""
 
-        # Sample record
+        # Ensure clean import each time
+        sys.modules.pop("ProjectTwoDashboardApp", None)
+
+        # Sample record (16 fields including _id)
         cls.sample_record = {
             "_id": "abc123",
             "age_upon_outcome": "2 years",
@@ -40,16 +44,16 @@ class TestProjectTwoDashboard(unittest.TestCase):
         cls.mock_crud_instance = MagicMock()
         cls.mock_crud_instance.read.return_value = [cls.sample_record.copy()]
 
-        # Chaged to injecting AAC_PASS
+        # Inject required environment variable
         cls.patcher_env = patch.dict("os.environ", {"AAC_PASS": "dummy_pass"})
 
-        # Patch CRUD where it is defined
+        # Patch CRUD class
         cls.patcher_crud = patch(
             "CRUD_Python_Module.CRUD",
             return_value=cls.mock_crud_instance
         )
 
-        # Prevent logo file check issues
+        # Prevent logo file lookup
         cls.patcher_logo = patch("os.path.exists", return_value=False)
 
         cls.patcher_env.start()
@@ -126,12 +130,17 @@ class TestProjectTwoDashboard(unittest.TestCase):
 
     def test_update_graphs_with_data(self):
         from dash import dcc
+
         view_data = [
             {"breed": "Labrador Retriever Mix", "name": "Buddy"},
             {"breed": "Labrador Retriever Mix", "name": "Max"},
             {"breed": "Newfoundland", "name": "Bear"},
         ]
-        result = self.app_module.update_graphs(view_data)
+
+        # Patch plotly pie at runtime
+        with patch.object(self.app_module.px, "pie", return_value=MagicMock()):
+            result = self.app_module.update_graphs(view_data)
+
         self.assertIsInstance(result, list)
         self.assertIsInstance(result[0], dcc.Graph)
 
@@ -147,9 +156,14 @@ class TestProjectTwoDashboard(unittest.TestCase):
 
     def test_update_map_with_data(self):
         from dash import dcc
+
         record = self.sample_record.copy()
         record.pop("_id", None)
-        result = self.app_module.update_map([record], [0])
+
+        # Patch plotly scatter_map at runtime
+        with patch.object(self.app_module.px, "scatter_map", return_value=MagicMock()):
+            result = self.app_module.update_map([record], [0])
+
         self.assertIsInstance(result, dcc.Graph)
 
     def test_update_map_empty_data(self):
