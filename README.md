@@ -721,6 +721,56 @@ The Dash framework by Plotly was used to provide both the view and controller la
 ### Challenges
 The main issues ran into unit testing via mocking. It was important to ensure that each part of the application didn't run remotely but, rather used mocking to replicate the behavior. 
 
+### Reflection
+
+#### 1. How do you write programs that are maintainable, readable, and adaptable?
+Especially consider your work on the CRUD Python module from Project One, which
+you used to connect the dashboard widgets to the database in Project Two. What
+were the advantages of working in this way? How else could you use this CRUD
+Python module in the future?
+
+**Answer:**
+When creating the dashboard we first make a module file for CRUD operations.
+This keeps the work modular and easier to maintian and test. To keep the work
+readable the use of comments and design by contract is also an important
+standard.
+
+---
+
+#### 2. How do you approach a problem as a computer scientist? 
+Consider how you approached the database or dashboard requirements that
+Grazioso Salvare requested. How did your approach to this project differ from
+previous assignments in other courses? What techniques or strategies would you
+use in the future to create databases to meet other client requests?
+
+**Answer:**
+In approaching a problem as a computer scientist it is first important to
+consider the what the per and post conditions are. Then work can be done to
+select best tools to use to achive the post conditions. Lastly to ensure
+security and maintainability standards are meet. 
+
+I haven't use an automated tool like dash before and it helped in speeding up
+the development as I only had to focus on backend. In the future I would
+consider using such tools if the performance meet company requirements and
+deadlines.
+
+---
+
+#### 3. What do computer scientists do, and why does it matter? 
+How would your work on this type of project help a company, like Grazioso
+Salvare, to do their work better?
+
+**Answer:**
+Computer scientists implement strategies based on data constructs and workflows
+to implement, deploy, and maintian software or automated processes.
+
+To make the dashboard enterprise level I would use front-end and backend
+connecting via fastapi. While dash from python is fast to setup you get more
+control and performance manually handling the html, css, and js to connect the
+backend.
+
+---
+
 ## Resources
 - [Dash Documentation](https://dash.plotly.com/)
 - [Plotly Express](https://plotly.com/python/plotly-express/)
